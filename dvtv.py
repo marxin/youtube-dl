@@ -4,11 +4,12 @@ import urllib.request
 import re
 import subprocess
 import os
-from datetime import date
+
+from datetime import *
 
 def get_links(url):
     response = urllib.request.urlopen(url)
-    data = response.read()      # a `bytes` object
+    data = response.read()
     text = data.decode('utf-8')
     links = []
     for line in text.split('\n'):
@@ -16,7 +17,7 @@ def get_links(url):
         if m != None:
             links.append([m.group(1), re.match('.*/dvtv/(.*)/r~.*', line).group(1)])
         m2 = re.match('<span>(.*)</span></h5></div>', line)
-        if m2 != None:
+        if m2 != None and len(links) != 0:
             d = m2.group(1).replace('&#32;', '')
             links[-1].append(d)
 
@@ -48,6 +49,9 @@ for link in all_links:
     print('%u/%u: %s' % (c, len(all_links), str(link)))
     u = 'http://video.aktualne.cz/%s' % link[0]
     dates = link[2].split('.')
+    if dates[0] == 'dnes':
+        dates = datetime.strftime(datetime.now(), '%Y.%m.%d').split('.')
+
     for i in range(len(dates)):
         if len(dates[i]) == 1:
             dates[i] = '0' + dates[i]
@@ -65,6 +69,11 @@ for link in all_links:
 
     args = ["./youtube-dl", u, '-o', mp4]
     subprocess.call(args)
+
+    if not os.path.isfile(mp4):
+        print('Error in downloading: ' + mp4)
+        continue
+
     subprocess.call(['ffmpeg', '-y', '-i', mp4, mp3])
 
     print('Removing: %s' % mp4)
