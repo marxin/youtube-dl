@@ -28,14 +28,17 @@ class Video:
         if int(dates[2]) > 31:
             dates = reversed(list(dates))
 
-        prefix = '-'.join(dates)
-        self.date = prefix
+        dates = list(map(lambda x: int(x), dates))
+        self.date = datetime(dates[0], dates[1], dates[2])
+
+    def get_date_str(self):
+        return self.date.strftime('%d. %m. %Y')
 
     def __str__(self):
-        return 'link: %s, filename: %s, description: %s, date: %s' % (self.link, self.filename, self.description, self.date)
+        return 'link: %s, filename: %s, description: %s, date: %s' % (self.link, self.filename, self.description, self.get_date_str())
 
     def get_filename(self, suffix):
-        return '%s-%s.%s' % (self.date, self.filename, suffix)
+        return '%s-%s.%s' % (self.date.strftime('%Y-%m-%d'), self.filename, suffix)
 
 def get_links(url):
     response = urllib.request.urlopen(url)
@@ -100,7 +103,7 @@ for video in sorted(all_links, reverse = True, key = lambda x: x.date):
         continue
 
     subprocess.call(['ffmpeg', '-y', '-i', mp4, mp3])
-    subprocess.call(['id3v2', '-2', '-g', 'Žurnalistika', '-a', 'DVTV', '-A', 'DVTV', '-t', 'DVTV: ' + video.description, mp3])
+    subprocess.call(['id3v2', '-2', '-g', 'Žurnalistika', '-a', 'DVTV', '-A', 'DVTV ' + video.date.strftime('%Y-%m'), '-t', 'DVTV: ' + video.date.strftime('%d. %m. ') + video.description, mp3])
 
     print('Removing: %s' % mp4)
     os.remove(mp4)
