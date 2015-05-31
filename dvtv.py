@@ -100,7 +100,7 @@ for video in sorted(all_links, reverse = True, key = lambda x: x.date):
         continue
 
     subprocess.call(['ffmpeg', '-y', '-i', mp4, mp3])
-    subprocess.call(['id3v2', '-2', '-g', 'Žurnalistika', '-a', 'DVTV', '-A', 'DVTV', '-t', video.description, mp3])
+    subprocess.call(['id3v2', '-2', '-g', 'Žurnalistika', '-a', 'DVTV', '-A', 'DVTV', '-t', 'DVTV: ' + video.description, mp3])
 
     print('Removing: %s' % mp4)
     os.remove(mp4)
