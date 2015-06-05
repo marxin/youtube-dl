@@ -13,6 +13,7 @@ class Video:
         self.filename = filename
         self.date = None
         self.description = None
+        self.image = None
 
     def set_date(self, s):
         dates = s.split('.')
@@ -31,14 +32,20 @@ class Video:
         dates = list(map(lambda x: int(x), dates))
         self.date = datetime(dates[0], dates[1], dates[2])
 
+    def download_image(self):
+        subprocess.call(['wget', 'http:' + self.image, '-O', 'cover.jpg'])
+
     def get_date_str(self):
         return self.date.strftime('%d. %m. %Y')
 
     def __str__(self):
-        return 'link: %s, filename: %s, description: %s, date: %s' % (self.link, self.filename, self.description, self.get_date_str())
+        return 'link: %s, filename: %s, description: %s, date: %s, image: %s' % (self.link, self.filename, self.description, self.get_date_str(), self.image)
 
     def get_filename(self, suffix):
         return '%s-%s.%s' % (self.date.strftime('%Y-%m-%d'), self.filename, suffix)
+
+    def build_url(self, suffix):
+        return 'http://video.aktualne.cz/%s' % suffix 
 
 def get_links(url):
     response = urllib.request.urlopen(url)
@@ -59,6 +66,9 @@ def get_links(url):
         m3 = re.match('.*<span class="nazev">(.*)</span>.*', line)
         if m3 != None and last_video != None:
             last_video.description = m3.group(1)
+        m4 = re.match('<img src="([^"]*)".*', line)
+        if m4 != None and last_video != None:
+            last_video.image = m4.group(1)
 
     return links
 
@@ -86,7 +96,6 @@ c = 0
 for video in sorted(all_links, reverse = True, key = lambda x: x.date):
     c += 1
     print('%u/%u: %s' % (c, len(all_links), str(video)))
-    u = 'http://video.aktualne.cz/%s' % video.link
 
     mp3 = video.get_filename ('mp3')
     mp4 = video.get_filename ('mp4')
@@ -95,6 +104,7 @@ for video in sorted(all_links, reverse = True, key = lambda x: x.date):
         print('File exists: ' + mp3)
         continue
 
+    u = video.build_url(video.link)
     args = ["./youtube-dl", u, '-o', mp4]
     subprocess.call(args)
 
@@ -103,7 +113,9 @@ for video in sorted(all_links, reverse = True, key = lambda x: x.date):
         continue
 
     subprocess.call(['ffmpeg', '-y', '-i', mp4, mp3])
-    subprocess.call(['id3v2', '-2', '-g', 'Žurnalistika', '-a', 'DVTV', '-A', 'DVTV ' + video.date.strftime('%Y-%m'), '-t', 'DVTV: ' + video.date.strftime('%d. %m. ') + video.description, mp3])
+    subprocess.call(['id3v2', '-2', '-g', 'Žunalistika', '-a', 'DVTV', '-A', 'DVTV ' + video.date.strftime('%Y-%m'), '-t', 'DVTV: ' + video.date.strftime('%d. %m. ') + video.description, mp3])
+    video.download_image()
+    subprocess.call(['eyeD3', '--add-image', 'cover.jpg:OTHER', mp3])
 
     print('Removing: %s' % mp4)
     os.remove(mp4)
