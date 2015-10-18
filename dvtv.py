@@ -34,8 +34,9 @@ class Video:
 
     def create_folder(self):
         f = datetime.strftime(self.date, '%Y-%m')
+        f = os.path.join('download', f)
         if not os.path.exists(f):
-            os.mkdir(f)
+            os.makedirs(f)
         return f
 
     def get_date_str(self):
@@ -46,7 +47,7 @@ class Video:
 
     def get_filename(self, suffix):
         f = self.create_folder()
-        return os.path.join('download', f, '%s-%s.%s' % (self.date.strftime('%Y-%m-%d'), self.filename, suffix))
+        return os.path.join(f, '%s-%s.%s' % (self.date.strftime('%Y-%m-%d'), self.filename, suffix))
 
     def build_url(self, suffix):
         return 'http://video.aktualne.cz/%s' % suffix 
