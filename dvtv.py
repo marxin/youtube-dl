@@ -32,8 +32,11 @@ class Video:
         dates = list(map(lambda x: int(x), dates))
         self.date = datetime(dates[0], dates[1], dates[2])
 
-    def download_image(self):
-        subprocess.call(['wget', 'http:' + self.image, '-O', 'cover.jpg'])
+    def create_folder(self):
+        f = datetime.strftime(self.date, '%Y-%m')
+        if not os.path.exists(f):
+            os.mkdir(f)
+        return f
 
     def get_date_str(self):
         return self.date.strftime('%d. %m. %Y')
@@ -42,7 +45,8 @@ class Video:
         return 'link: %s, filename: %s, description: %s, date: %s, image: %s' % (self.link, self.filename, self.description, self.get_date_str(), self.image)
 
     def get_filename(self, suffix):
-        return '%s-%s.%s' % (self.date.strftime('%Y-%m-%d'), self.filename, suffix)
+        f = self.create_folder()
+        return os.path.join('download', f, '%s-%s.%s' % (self.date.strftime('%Y-%m-%d'), self.filename, suffix))
 
     def build_url(self, suffix):
         return 'http://video.aktualne.cz/%s' % suffix 
@@ -59,7 +63,7 @@ def get_links(url):
             if last_video != None:
                 links.append(last_video)
             last_video = Video(m.group(1), re.match('.*/dvtv/(.*)/r~.*', line).group(1))
-        m2 = re.match('<span>(.*)</span></h5></div>', line)
+        m2 = re.match('.*<span>(.*)</span></h5>', line)
         if m2 != None and last_video != None:
             d = m2.group(1).replace('&#32;', '')
             last_video.set_date(d)
@@ -97,6 +101,11 @@ for video in sorted(all_links, reverse = True, key = lambda x: x.date):
     c += 1
     print('%u/%u: %s' % (c, len(all_links), str(video)))
 
+    print(video.description)
+    if 'Drtinová Veselovský TV' in video.description:
+        print('Skipping a teaser video: ' + video.description)
+        continue
+
     mp3 = video.get_filename ('mp3')
     mp4 = video.get_filename ('mp4')
 
@@ -114,7 +123,6 @@ for video in sorted(all_links, reverse = True, key = lambda x: x.date):
 
     subprocess.call(['ffmpeg', '-y', '-i', mp4, mp3])
     subprocess.call(['id3v2', '-2', '-g', 'Žunalistika', '-a', 'DVTV', '-A', 'DVTV ' + video.date.strftime('%Y-%m'), '-t', 'DVTV: ' + video.date.strftime('%d. %m. ') + video.description, mp3])
-    video.download_image()
     subprocess.call(['eyeD3', '--add-image', 'cover.jpg:OTHER', mp3])
 
     print('Removing: %s' % mp4)
