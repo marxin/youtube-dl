@@ -97,6 +97,8 @@ for link in all_links:
 
 print(len(all_links))
 
+FNULL = open(os.devnull, 'w')
+
 c = 0
 for video in sorted(all_links, reverse = True, key = lambda x: x.date):
     c += 1
@@ -122,9 +124,10 @@ for video in sorted(all_links, reverse = True, key = lambda x: x.date):
         print('Error in downloading: ' + mp4)
         continue
 
+    print(['ffmpeg', '-y', '-i', mp4, mp3])
     subprocess.call(['ffmpeg', '-y', '-i', mp4, mp3])
     subprocess.call(['id3v2', '-2', '-g', 'Žunalistika', '-a', 'DVTV', '-A', 'DVTV ' + video.date.strftime('%Y-%m'), '-t', 'DVTV: ' + video.date.strftime('%d. %m. ') + video.description, mp3])
-    subprocess.call(['eyeD3', '--add-image', 'cover.jpg:OTHER', mp3])
+    subprocess.call(['eyeD3', '--add-image', 'cover.jpg:OTHER', mp3], stderr = FNULL, stdout = FNULL)
 
     print('Removing: %s' % mp4)
     os.remove(mp4)
