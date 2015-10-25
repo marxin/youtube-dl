@@ -118,16 +118,16 @@ for video in sorted(all_links, reverse = True, key = lambda x: x.date):
 
     u = video.build_url(video.link)
     args = ["./youtube-dl", u, '-o', mp4]
-    subprocess.call(args)
+    subprocess.check_call(args)
 
     if not os.path.isfile(mp4):
         print('Error in downloading: ' + mp4)
         continue
 
     print(['ffmpeg', '-y', '-i', mp4, mp3])
-    subprocess.call(['ffmpeg', '-y', '-i', mp4, mp3])
-    subprocess.call(['id3v2', '-2', '-g', 'Žunalistika', '-a', 'DVTV', '-A', 'DVTV ' + video.date.strftime('%Y-%m'), '-t', 'DVTV: ' + video.date.strftime('%d. %m. ') + video.description, mp3])
-    subprocess.call(['eyeD3', '--add-image', 'cover.jpg:OTHER', mp3], stderr = FNULL, stdout = FNULL)
+    subprocess.check_call(['ffmpeg', '-y', '-i', mp4, mp3])
+    subprocess.check_call(['id3v2', '-2', '-g', 'Žunalistika', '-a', 'DVTV', '-A', 'DVTV ' + video.date.strftime('%Y-%m'), '-t', 'DVTV: ' + video.date.strftime('%d. %m. ') + video.description, mp3])
+    subprocess.check_call(['eyeD3', '--add-image', 'cover.jpg:OTHER', mp3], stderr = FNULL, stdout = FNULL)
 
     print('Removing: %s' % mp4)
     os.remove(mp4)
