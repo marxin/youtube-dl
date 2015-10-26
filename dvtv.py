@@ -101,7 +101,7 @@ d = {}
 for link in all_links:
     d[link.link] = link
 
-all_links = list(set(all_links))
+all_links = list(set(filter(lambda x: not 'Drtinová Veselovský TV' in x.description, all_links)))
 print(len(all_links))
 
 FNULL = open(os.devnull, 'w')
@@ -110,11 +110,6 @@ c = 0
 for video in sorted(all_links, reverse = True, key = lambda x: x.date):
     c += 1
     print('%u/%u: %s' % (c, len(all_links), str(video)))
-
-    print(video.description)
-    if 'Drtinová Veselovský TV' in video.description:
-        print('Skipping a teaser video: ' + video.description)
-        continue
 
     mp3 = video.get_filename ('mp3')
     mp4 = video.get_filename ('mp4')
