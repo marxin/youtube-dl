@@ -52,6 +52,12 @@ class Video:
     def build_url(self, suffix):
         return 'http://video.aktualne.cz/%s' % suffix 
 
+    def __eq__(self, other):
+        return other != None and self.link == other.link
+
+    def __hash__(self):
+        return hash(self.link)
+
 def get_links(url):
     response = urllib.request.urlopen(url)
     data = response.read()
@@ -82,7 +88,7 @@ i = 0
 all_links = []
 
 while True:
-    url = 'http://video.aktualne.cz/dvtv/?offset=%u' % (30 * i)
+    url = 'http://video.aktualne.cz/dvtv/?offset=%u' % (5 * i)
     links = get_links(url)
     all_links += links
     print('Getting links: %u' % i)
@@ -95,6 +101,7 @@ d = {}
 for link in all_links:
     d[link.link] = link
 
+all_links = list(set(all_links))
 print(len(all_links))
 
 FNULL = open(os.devnull, 'w')
@@ -118,7 +125,7 @@ for video in sorted(all_links, reverse = True, key = lambda x: x.date):
 
     u = video.build_url(video.link)
     args = ["./youtube-dl", u, '-o', mp4]
-    subprocess.check_call(args)
+    subprocess.call(args)
 
     if not os.path.isfile(mp4):
         print('Error in downloading: ' + mp4)
