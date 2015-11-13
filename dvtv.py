@@ -6,6 +6,13 @@ import subprocess
 import os
 
 from datetime import *
+from feedgen.feed import FeedGenerator
+from pytz import timezone
+from urllib.parse import urljoin
+
+dest_folder = 'podcasts'
+podcast_file = 'dvtv.rss'
+root_url = 'https://marxin.cz/'
 
 class Video:
     def __init__(self, link, filename):
@@ -14,6 +21,7 @@ class Video:
         self.date = None
         self.description = None
         self.image = None
+        self.full_description = None
 
     def set_date(self, s):
         dates = s.split('.')
@@ -30,11 +38,11 @@ class Video:
             dates = reversed(list(dates))
 
         dates = list(map(lambda x: int(x), dates))
-        self.date = datetime(dates[0], dates[1], dates[2])
+        self.date = datetime(dates[0], dates[1], dates[2], tzinfo = timezone('Europe/Prague'))
 
     def create_folder(self):
         f = datetime.strftime(self.date, '%Y-%m')
-        f = os.path.join('download', f)
+        f = os.path.join(dest_folder, f)
         if not os.path.exists(f):
             os.makedirs(f)
         return f
@@ -49,14 +57,33 @@ class Video:
         f = self.create_folder()
         return os.path.join(f, '%s-%s.%s' % (self.date.strftime('%Y-%m-%d'), self.filename, suffix))
 
-    def build_url(self, suffix):
-        return 'http://video.aktualne.cz/%s' % suffix 
+    def get_description(self):
+        response = urllib.request.urlopen(build_url(self.link))
+        data = response.read()
+        text = data.decode('utf-8')
+        description = '' 
+        start = False
+        for line in text.split('\n'):
+            m = re.match('.*<p class="popis" data-replace="description"><span>[^|]*(.*)', line)
+            if start:
+                description += line
+            elif m != None:
+                description = m.group(1).strip().lstrip('| ')
+                start = True
+
+            if '</p>' in description:
+                break
+
+        self.full_description = description.strip().strip('</p>')
 
     def __eq__(self, other):
         return other != None and self.link == other.link
 
     def __hash__(self):
         return hash(self.link)
+
+def build_url(suffix):
+    return 'http://video.aktualne.cz/%s' % suffix 
 
 def get_links(url):
     response = urllib.request.urlopen(url)
@@ -91,6 +118,8 @@ while True:
     url = 'http://video.aktualne.cz/dvtv/?offset=%u' % (5 * i)
     links = get_links(url)
     all_links += links
+    # TODO: remove
+    break
     print('Getting links: %u' % i)
     if len(links) == 0:
         break
@@ -102,34 +131,63 @@ for link in all_links:
     d[link.link] = link
 
 all_links = list(set(filter(lambda x: not 'Drtinová Veselovský TV' in x.description, all_links)))
+all_links = sorted(all_links, reverse = True, key = lambda x: x.date)
 print(len(all_links))
 
 FNULL = open(os.devnull, 'w')
 
+if not os.path.exists(dest_folder):
+    os.makedirs(dest_folder)
+
+fg = FeedGenerator()
+fg.load_extension('podcast')
+fg.podcast.itunes_category('Technology', 'Podcasting')
+
+fg.id('marxin-dvtv')
+fg.title('DVTV')
+fg.author({'name': 'Martin Liška', 'email': 'marxin.liska@gmail.com' })
+fg.language('cs-CZ')
+fg.link(href = 'test.cz', rel = 'self')
+fg.description('DVTV')
+
 c = 0
-for video in sorted(all_links, reverse = True, key = lambda x: x.date):
+for video in all_links:
     c += 1
     print('%u/%u: %s' % (c, len(all_links), str(video)))
 
     mp3 = video.get_filename ('mp3')
     mp4 = video.get_filename ('mp4')
 
-    if os.path.isfile(mp3):
+    if not os.path.isfile(mp3):
+        u = build_url(video.link)
+        args = ["./youtube-dl", u, '-o', mp4]
+        subprocess.call(args)
+
+        if not os.path.isfile(mp4):
+            print('Error in downloading: ' + mp4)
+            continue
+
+        print(['ffmpeg', '-y', '-i', mp4, mp3])
+        subprocess.check_call(['ffmpeg', '-y', '-i', mp4, mp3])
+        subprocess.check_call(['id3v2', '-2', '-g', 'Žunalistika', '-a', 'DVTV', '-A', 'DVTV ' + video.date.strftime('%Y-%m'), '-t', 'DVTV: ' + video.date.strftime('%d. %m. ') + video.description, mp3])
+        subprocess.check_call(['eyeD3', '--add-image', 'cover.jpg:OTHER', mp3], stderr = FNULL, stdout = FNULL)
+
+        print('Removing: %s' % mp4)
+        os.remove(mp4)
+
+    else:
         print('File exists: ' + mp3)
-        continue
 
-    u = video.build_url(video.link)
-    args = ["./youtube-dl", u, '-o', mp4]
-    subprocess.call(args)
+    # add new RSS feed entry
+    print('Getting full description for: '+ video.description)
+    video.get_description()
+    fe = fg.add_entry()
+    fe.id(video.link)
+    fe.title(video.description)
+    fe.description(video.full_description)
+    u = urljoin(root_url, video.get_filename('mp3'))
+    fe.link(href = u, rel = 'self')
+    fe.enclosure(u, str(os.stat(mp3).st_size), 'audio/mpeg')
+    fe.published(video.date)
 
-    if not os.path.isfile(mp4):
-        print('Error in downloading: ' + mp4)
-        continue
-
-    print(['ffmpeg', '-y', '-i', mp4, mp3])
-    subprocess.check_call(['ffmpeg', '-y', '-i', mp4, mp3])
-    subprocess.check_call(['id3v2', '-2', '-g', 'Žunalistika', '-a', 'DVTV', '-A', 'DVTV ' + video.date.strftime('%Y-%m'), '-t', 'DVTV: ' + video.date.strftime('%d. %m. ') + video.description, mp3])
-    subprocess.check_call(['eyeD3', '--add-image', 'cover.jpg:OTHER', mp3], stderr = FNULL, stdout = FNULL)
-
-    print('Removing: %s' % mp4)
-    os.remove(mp4)
+fg.rss_file(os.path.join(dest_folder, podcast_file))
