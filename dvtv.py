@@ -13,7 +13,6 @@ from urllib.parse import urljoin
 from mutagen.mp3 import MP3
 
 dest_folder = 'podcasts'
-podcast_file = 'dvtv.rss'
 root_url = 'http://192.168.10.201/'
 start_date = datetime(2015, 1, 1, tzinfo = timezone('Europe/Prague'))
 datetime_format = '%Y-%m-%d %H:%M:%S'
@@ -60,6 +59,9 @@ class VideoDatabase:
     def serialize(self):
         with open(self.json_filename, 'w') as ofile:
            json.dump([x.serialize() for x in self.videos], ofile)
+
+        for video in self.videos:
+            self.add_podcast_entry(video, video.get_filename('mp3'))
 
         self.feed_generator.rss_file(self.rss_filename)
 
@@ -126,8 +128,6 @@ class VideoDatabase:
         mp3_length = round(MP3(filename).info.length)
         fe.podcast.itunes_duration(mp3_length)
 
-        self.feed_generator.rss_file(os.path.join(dest_folder, podcast_file))
-
     def main(self):
         FNULL = open(os.devnull, 'w')
 
@@ -167,7 +167,6 @@ class VideoDatabase:
             video.get_description()
 
             self.add_video(video)
-            self.add_podcast_entry(video, mp3)
 
 class Video:
     def __init__(self, link = None, filename = None, json = None):
@@ -246,6 +245,6 @@ class Video:
     def __hash__(self):
         return hash(self.link)
 
-db = VideoDatabase(os.path.join(dest_folder, 'podcast.rss'), os.path.join(dest_folder, 'db.json'))
+db = VideoDatabase(os.path.join(dest_folder, 'dvtv.rss'), os.path.join(dest_folder, 'db.json'))
 db.main()
 db.serialize()
