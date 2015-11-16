@@ -5,12 +5,12 @@ import re
 import json
 import base64
 import zlib
-import xml.etree.ElementTree
 
 from hashlib import sha1
 from math import pow, sqrt, floor
 from .common import InfoExtractor
 from ..compat import (
+    compat_etree_fromstring,
     compat_urllib_parse,
     compat_urllib_parse_unquote,
     compat_urllib_request,
@@ -21,6 +21,7 @@ from ..utils import (
     bytes_to_intlist,
     intlist_to_bytes,
     int_or_none,
+    lowercase_escape,
     remove_end,
     unified_strdate,
     urlencode_postdata,
@@ -104,7 +105,7 @@ class CrunchyrollIE(CrunchyrollBaseIE):
             'id': '589804',
             'ext': 'flv',
             'title': 'Culture Japan Episode 1 – Rebuilding Japan after the 3.11',
-            'description': 'md5:fe2743efedb49d279552926d0bd0cd9e',
+            'description': 'md5:2fbc01f90b87e8e9137296f37b461c12',
             'thumbnail': 're:^https?://.*\.jpg$',
             'uploader': 'Danny Choo Network',
             'upload_date': '20120213',
@@ -234,7 +235,7 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
         return output
 
     def _extract_subtitles(self, subtitle):
-        sub_root = xml.etree.ElementTree.fromstring(subtitle)
+        sub_root = compat_etree_fromstring(subtitle)
         return [{
             'ext': 'srt',
             'data': self._convert_subtitles_to_srt(sub_root),
@@ -245,7 +246,7 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
 
     def _get_subtitles(self, video_id, webpage):
         subtitles = {}
-        for sub_id, sub_name in re.findall(r'\?ssid=([0-9]+)" title="([^"]+)', webpage):
+        for sub_id, sub_name in re.findall(r'\bssid=([0-9]+)"[^>]+?\btitle="([^"]+)', webpage):
             sub_page = self._download_webpage(
                 'http://www.crunchyroll.com/xml/?req=RpcApiSubtitle_GetXml&subtitle_script_id=' + sub_id,
                 video_id, note='Downloading subtitles for ' + sub_name)
@@ -287,11 +288,15 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
         if 'To view this, please log in to verify you are 18 or older.' in webpage:
             self.raise_login_required()
 
-        video_title = self._html_search_regex(r'<h1[^>]*>(.+?)</h1>', webpage, 'video_title', flags=re.DOTALL)
+        video_title = self._html_search_regex(
+            r'(?s)<h1[^>]*>((?:(?!<h1).)*?<span[^>]+itemprop=["\']title["\'][^>]*>(?:(?!<h1).)+?)</h1>',
+            webpage, 'video_title')
         video_title = re.sub(r' {2,}', ' ', video_title)
-        video_description = self._html_search_regex(r'"description":"([^"]+)', webpage, 'video_description', default='')
-        if not video_description:
-            video_description = None
+        video_description = self._html_search_regex(
+            r'<script[^>]*>\s*.+?\[media_id=%s\].+?"description"\s*:\s*"([^"]+)' % video_id,
+            webpage, 'description', default=None)
+        if video_description:
+            video_description = lowercase_escape(video_description.replace(r'\r\n', '\n'))
         video_upload_date = self._html_search_regex(
             [r'<div>Availability for free users:(.+?)</div>', r'<div>[^<>]+<span>\s*(.+?\d{4})\s*</span></div>'],
             webpage, 'video_upload_date', fatal=False, flags=re.DOTALL)
