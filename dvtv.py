@@ -12,7 +12,8 @@ from pytz import timezone
 from urllib.parse import urljoin
 from mutagen.mp3 import MP3
 
-dest_folder = '/srv/www/htdocs/podcasts'
+root_folder = '/srv/www/htdocs/'
+dest_folder = os.path.join(root_folder, 'podcasts')
 root_url = 'http://skyler.foxlink.cz/'
 start_date = datetime(2016, 1, 1, tzinfo = timezone('Europe/Prague'))
 datetime_format = '%Y-%m-%d %H:%M:%S'
@@ -122,7 +123,7 @@ class VideoDatabase:
         fe.title(video.description)
         fe.description(video.full_description)
         assert filename.startswith(dest_folder)
-        filename_url = filename[len(dest_folder):]
+        filename_url = filename[len(root_folder):]
         u = urljoin(root_url, filename_url)
         fe.link(href = u, rel = 'self')
         fe.enclosure(u, str(os.stat(filename).st_size), 'audio/mpeg')
