@@ -13,7 +13,7 @@ from urllib.parse import urljoin
 from mutagen.mp3 import MP3
 
 dest_folder = '/srv/www/htdocs/podcasts'
-root_url = 'http://192.168.10.201/'
+root_url = 'http://skyler.foxlink.cz/'
 start_date = datetime(2016, 1, 1, tzinfo = timezone('Europe/Prague'))
 datetime_format = '%Y-%m-%d %H:%M:%S'
 prague_tz = timezone('Europe/Prague')
