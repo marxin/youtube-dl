@@ -121,7 +121,9 @@ class VideoDatabase:
         fe.id(video.link)
         fe.title(video.description)
         fe.description(video.full_description)
-        u = urljoin(root_url, filename)
+        assert filename.startswith(dest_folder)
+        filename_url = filename[len(dest_folder):]
+        u = urljoin(root_url, filename_url)
         fe.link(href = u, rel = 'self')
         fe.enclosure(u, str(os.stat(filename).st_size), 'audio/mpeg')
         fe.published(video.date)
