@@ -12,9 +12,9 @@ from pytz import timezone
 from urllib.parse import urljoin
 from mutagen.mp3 import MP3
 
-dest_folder = 'podcasts'
+dest_folder = '/srv/www/htdocs/podcasts'
 root_url = 'http://192.168.10.201/'
-start_date = datetime(2015, 1, 1, tzinfo = timezone('Europe/Prague'))
+start_date = datetime(2016, 1, 1, tzinfo = timezone('Europe/Prague'))
 datetime_format = '%Y-%m-%d %H:%M:%S'
 prague_tz = timezone('Europe/Prague')
 
