@@ -148,7 +148,7 @@ class VideoDatabase:
 
             if not os.path.isfile(mp3):
                 u = build_url(video.link)
-                args = ["./youtube-dl", u, '-o', mp4]
+                args = [os.path.join(os.path.dirname(os.path.realpath(__file__)), "./youtube-dl"), u, '-o', mp4]
                 subprocess.call(args)
 
                 if not os.path.isfile(mp4):
