@@ -135,7 +135,7 @@ class VideoDatabase:
         FNULL = open(os.devnull, 'w')
 
         if not os.path.exists(dest_folder):
-            os.makedirs(dest_folder, 0766)
+            os.makedirs(dest_folder, 0755)
 
         all_links = self.get_links()
         c = 0
@@ -210,7 +210,7 @@ class Video:
         f = datetime.strftime(self.date, '%Y-%m')
         f = os.path.join(dest_folder, f)
         if not os.path.exists(f):
-            os.makedirs(f, 0766)
+            os.makedirs(f, 0755)
         return f
 
     def get_date_str(self):
