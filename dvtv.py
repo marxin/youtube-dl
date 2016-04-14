@@ -131,11 +131,19 @@ class VideoDatabase:
         mp3_length = round(MP3(filename).info.length)
         fe.podcast.itunes_duration(mp3_length)
 
+    def remove_video_files(self):
+        for root, dirs, files in os.walk("/mydir"):
+            for f in files:
+                if f.endswith('.mp4'):
+                    os.remove(f)
+
     def main(self):
         FNULL = open(os.devnull, 'w')
 
         if not os.path.exists(dest_folder):
             os.makedirs(dest_folder, 0o755)
+
+        self.remove_video_files()
 
         all_links = self.get_links()
         c = 0
