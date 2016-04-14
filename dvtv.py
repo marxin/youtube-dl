@@ -61,7 +61,7 @@ class VideoDatabase:
         with open(self.json_filename, 'w') as ofile:
            json.dump([x.serialize() for x in self.videos], ofile)
 
-        for video in self.videos:
+        for video in sorted(self.videos, key=attrgetter('date', 'save_date')):
             self.add_podcast_entry(video, video.get_filename('mp3'))
 
         self.feed_generator.rss_file(self.rss_filename)
@@ -176,6 +176,8 @@ class Video:
         self.link = link
         self.filename = filename
         self.date = None
+        if json == None:
+            self.save_date = datetime.datetime.now()
         self.description = None
         self.full_description = None
 
@@ -185,9 +187,11 @@ class Video:
             self.date = prague_tz.localize(datetime.strptime(json['date'], datetime_format))
             self.description = json['description']
             self.full_description = json['full_description']
+            if 'save_date' in json:
+                self.save_date = prague_tz.localize(datetime.strptime(json['save_date'], datetime_format))
 
     def serialize(self):
-        return { 'link': self.link, 'filename': self.filename, 'date': datetime.strftime(self.date, datetime_format), 'description': self.description, 'full_description': self.full_description }
+        return { 'link': self.link, 'filename': self.filename, 'date': datetime.strftime(self.date, datetime_format), 'save_date': datetime.strftime(self.save_date, datetime_format), 'description': self.description, 'full_description': self.full_description }
 
     def set_date(self, s):
         dates = s.split('.')
