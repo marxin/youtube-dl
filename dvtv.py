@@ -15,7 +15,7 @@ from mutagen.mp3 import MP3
 root_folder = '/srv/www/htdocs/'
 dest_folder = os.path.join(root_folder, 'podcasts')
 root_url = 'http://skyler.foxlink.cz:8000/'
-start_date = datetime(2016, 1, 1, tzinfo = timezone('Europe/Prague'))
+start_date = datetime(2016, 4, 1, tzinfo = timezone('Europe/Prague'))
 datetime_format = '%Y-%m-%d %H:%M:%S'
 prague_tz = timezone('Europe/Prague')
 
