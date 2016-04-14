@@ -185,7 +185,7 @@ class Video:
         self.filename = filename
         self.date = None
         if json == None:
-            self.save_date = datetime.datetime.now()
+            self.save_date = datetime.now()
         self.description = None
         self.full_description = None
 
@@ -195,6 +195,7 @@ class Video:
             self.date = prague_tz.localize(datetime.strptime(json['date'], datetime_format))
             self.description = json['description']
             self.full_description = json['full_description']
+            self.save_date = None
             if 'save_date' in json:
                 self.save_date = prague_tz.localize(datetime.strptime(json['save_date'], datetime_format))
 
